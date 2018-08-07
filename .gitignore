@@ -8,6 +8,9 @@ metadata.json
 
 help/ENC*
 
+# Docs
+docs/_site
+
 # cromwell temp dirs
 cromwell-executions/
 cromwell-workflow-logs/
