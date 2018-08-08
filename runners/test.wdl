@@ -19,7 +19,7 @@ task flatten_ {
 	Array[File] fastqs
 
 	command { 
-		mkdir mapping
+		mkdir -p mapping
 		cat ${write_lines(fastqs)} | xargs -I % ln -s % mapping
 		ls mapping
 	}
