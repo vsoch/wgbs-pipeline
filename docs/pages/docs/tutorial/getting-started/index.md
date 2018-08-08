@@ -79,11 +79,12 @@ What did we just download? Let's take a look!
 $ tree $PWD -L 1
 wgbs-pipeline
 ├── backends
-├── Dockerfile   (-- a recipe to build a container
+├── Dockerfile   (-- a recipe to build a Docker container
 ├── docs         (-- documentation you are reading now, rendered on Github Pages
 ├── helpers
 ├── LICENSE
 ├── README.md
+├── Singularity  (-- recipe for building a Singularity container
 ├── data         (-- data input folders
 ├── runners      (-- "widdle" file folder with runners for the pipeline
 └── workflow_opts
