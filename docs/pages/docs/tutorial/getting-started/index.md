@@ -197,7 +197,13 @@ to download data. To summarize what we have covered thus far:
  - **workflow_opts/singularity.json** are workflow arguments for singularity
 
 
-Easy peezy! Let's run Cromwell!  Tell it to use singularity!
+Easy peezy! Let's run Cromwell!  Tell it to use singularity! First, here is how to do it with an instance (easier to get a PID)
+
+```bash
+java -jar -Dconfig.file=backends/backend.conf -Dbackend.default=singularity-instance cromwell-34.jar run runners/test.wdl -i data/TEST-YEAST/inputs.json -o workflow_opts/singularity.json
+```
+
+and here is how to do it with just a container (we need to figure out how to get the PID, it's currently a bug):
 
 ```bash
 $ java -jar -Dconfig.file=backends/backend.conf -Dbackend.default=singularity cromwell-34.jar run runners/test.wdl -i data/TEST-YEAST/inputs.json -o workflow_opts/singularity.json
