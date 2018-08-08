@@ -107,7 +107,17 @@ Let's not worry about the rest for now. You can continue on by selecting the env
 Since we are running a dummy test case with rather tiny data, we can start on your local machine. You should already
 have installed (and be comfortable) with using basic Docker.
 
-### Docker Container
+### Singularity Container
+
+We are going to be interacting with Cromwell (the Docker container) but via a (Singularity-based) container.
+This might seem weird, but it fixes [an issue](https://github.com/ENCODE-DCC/wgbs-pipeline/issues/3) with running Cromwell inside Docker. First, pull the Cromwell Docker image into a Singularity container. The
+Singularity container is a file that you will have on your local machine:
+
+```bash
+singularity pull --name cromwell.simg docker://broadinstitute/cromwell:prod
+```
+
+This will add the cromwell.simg to your present working directory, alongside your repository stuffs.
 
 #### Customize Local Variables
 
@@ -117,7 +127,7 @@ Remember the [workflow_opts](workflow_opts) folder you found locally?
 docker.json  sge.json  slurm.json
 ```
 
-Guess what file we will be interacting with? Since we are using Docker contianers, we are going to be using the `docker.json` file.
+Guess what file we will be interacting with? Since we are (sort of) using Docker contianers, we are going to be using the `docker.json` file.
 
 #### Data Inputs
 
@@ -136,13 +146,13 @@ data/TEST-YEAST/
 We can be stupid and quickly see the data that we need by looking at the `inputs.json` file provided:
 
 ```bash
+#TODO FIX ME
 {
-    "wgbs.prepare.metadata_file": "/opt/data/TEST-YEAST/metadata.csv",
+    "wgbs.prepare.metadata_file": "data/TEST-YEAST/metadata.csv",
     "wgbs.chromosomes":["chrIII"],
     "wgbs.pyglob_nearness":1,
     "wgbs.organism":"Yeast",
     "wgbs.reference": "/opt/data/TEST-YEAST/yeast.fa",
-    "wgbs.indexed_reference": "/opt/data/TEST-YEAST/yeast.gem",
     "wgbs.fastqs": [["/opt/data/fastq/flowcell_1_1_1.fastq.gz",
                      "/opt/data/fastq/flowcell_1_1_2.fastq.gz"]],
     "wgbs.sample_names": ["sample1", "sample2"],
@@ -150,20 +160,14 @@ We can be stupid and quickly see the data that we need by looking at the `inputs
 }
 ```
 
-**I'm not sure how to deal with paths - this is not a good solution (to have them hardcoded
-like that)**
-
-When you see a `../` that means we are going one directory **up** and in fact, we can 
-see those files in the fastq folder!
+Note that if you've run this already and the run generated an indexed reference, you can add that 
+to the configuration too (otherwise it is generated again):
 
 ```bash
-$ tree data/fastq/
-data/fastq/
-├── flowcell_1_1_1.fastq.gz
-└── flowcell_1_1_2.fastq.gz
+    "wgbs.indexed_reference": "/opt/data/TEST-YEAST/yeast.gem",
 ```
 
-And equivalently, the files for the yeast input (e.g., yeast.fa) are in the same folder as `inputs.json`
+The files for the yeast input (e.g., yeast.fa) are in the same folder as `inputs.json`
 so there isn't any additional relative path beyond the file name. We won't go into the structure of this file
 in detail, but notice that it has fields for a reference fasta, chromosomes, and things like the organism.
 If you are familiar with python, you might guess that `wgbs` is referencing the pipeline name, and will
@@ -187,11 +191,21 @@ $ java -jar -Dconfig.file=backends/backend.conf cromwell-30.2.jar run [WDL] -i i
 Okay, so we need to translate this to Docker! As a reminder, here is the entry point to Cromwell. Try running this command to see Cromwell say a pigggy hello:
 
 ```bash
-docker run broadinstitute/cromwell:prod
+singularity run cromwell.simg
+
+# is equivalent to
+
+./cromwell.simg
 ```
 
-Our next task, logically, is to translate the above command into something directed
-at the Docker container. There is an additional challenge of isolation. A Docker container is an isolated environment. This means that if you are to run something from your local machine, it can't actually *see* the
+Our next task, logically, is to translate the above Cromwell command into something directed
+at the Singularity container. There is an additional challenge of isolation. A Singuarity container is a (mostly) isolated environment, so we need to make sure that the container can see everything on the host. Thanksfully, Singularity will automatically bind the present work directory (and all its subfolders) so we
+can see our data files without additional work. This allows us to specify paths that are relative to
+the present working directory. 
+
+
+
+means that if you are to run something from your local machine, it can't actually *see* the
 files that you have! So in order to make any references to files in the container, we have to map a volume.
 This means that the working directory of your {{ site.github.repository_name }} folder will be mapped
 (somewhere) in the container. A good place for this is `/opt`, which tends to be used for things like
@@ -206,7 +220,7 @@ that the present working directory (`$PWD`) on my local machine is `/opt` inside
 throw the entire command at you and we can then talk about it.
 
 ```bash
-$ docker run -v $PWD/:/opt -it --entrypoint java broadinstitute/cromwell:prod -jar -Dconfig.file=/opt/backends/backend.conf /app/cromwell.jar run /opt/runners/test.wdl -i /opt/data/TEST-YEAST/inputs.json -o /opt/workflow_opts/docker.json
+$ singularity exec --bind /usr/bin/docker cromwell.simg java -jar -Dconfig.file=backends/backend.conf /app/cromwell.jar run runners/test.wdl -i data/TEST-YEAST/inputs.json -o workflow_opts/docker.json
 ```
 
 **still working on this, it doesn't work**

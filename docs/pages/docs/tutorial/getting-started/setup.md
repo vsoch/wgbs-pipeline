@@ -12,12 +12,18 @@ If you aren't familiar with Docker, it's a container technology that will let us
 
 ## 2. Cromwell
 
-[Cromwell](http://cromwell.readthedocs.io/en/stable/tutorials/FiveMinuteIntro/) is a workflow management tool developed by the Broad Institute that we will be using to interact with the pipelines. It's a Java program, so the executable that you will interact with is a ".jar" file. Thankfully, they have a Docker container ([https://hub.docker.com/r/broadinstitute/cromwell/](https://hub.docker.com/r/broadinstitute/cromwell/)) that you can use without needing to install the hairy Java application on your computer. Cromwell can be used locally, but also interacts with cloud resources to run pipelines. To get you started, we will just show you the executable that you can use locally.
+[Cromwell](http://cromwell.readthedocs.io/en/stable/tutorials/FiveMinuteIntro/) is a workflow management tool developed by the Broad Institute that we will be using to interact with the pipelines. It's a Java program, so the executable that you will interact with is a ".jar" file. While they have a Docker container ([https://hub.docker.com/r/broadinstitute/cromwell/](https://hub.docker.com/r/broadinstitute/cromwell/)), there are several issues with getting it to run from within Docker because it needs to launch other containers, and so we will use the java file locally. To get you started, we will just show you the executable that you can use locally.
+
+See [here](https://github.com/broadinstitute/cromwell/releases) for the latest release.
 
 ```bash
-$ docker run broadinstitute/cromwell:prod
+$ wget https://github.com/broadinstitute/cromwell/releases/download/34/cromwell-34.jar
+```
 
-cromwell 33-88e1a73-SNAP
+Interact with the executable like this:
+
+```bash
+$ java -jar cromwell-34.jar
 Usage: java -jar /path/to/cromwell.jar [server|run|submit] [options] <args>...
 
   --help                   Cromwell - Workflow Execution Engine
@@ -50,9 +56,5 @@ Submit the workflow to a Cromwell server.
   -p, --imports <value>    A directory or zipfile to search for workflow imports.
   -h, --host <value>       Cromwell server URL.
 ```
-
-If your Docker is configured correctly and you've pulled and run the image, you should see the print to
-the console above. Good job! Did you notice in the command we added the "prod" tag to the end?
-"Prod" refers to the production image tag. If you need to find other tags, view them [here](https://hub.docker.com/r/broadinstitute/cromwell/tags/).
 
 That's all you need to get started! Let's now go back to the [Pipelines section]({{ site.repo }}/#pipelines) where you can choose a pipeline you want to run.
