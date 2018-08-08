@@ -109,22 +109,14 @@ have installed (and be comfortable) with using basic Docker.
 
 ### Singularity Container
 
-We are going to be interacting with Cromwell (the Docker container) but via a (Singularity-based) container.
-This might seem weird, but it fixes [an issue](https://github.com/ENCODE-DCC/wgbs-pipeline/issues/3) with running Cromwell inside Docker. First, pull the Cromwell Docker image into a Singularity container. The
-Singularity container is a file that you will have on your local machine:
-
-```bash
-singularity pull --name cromwell.simg docker://broadinstitute/cromwell:prod
-```
-
-This will add the cromwell.simg to your present working directory, alongside your repository stuffs.
+We are going to be interacting with Cromwell locally and run the [gemBS provided Singularity container]().
 
 #### Customize Local Variables
 
 Remember the [workflow_opts](workflow_opts) folder you found locally?
 
 ```bash
-docker.json  sge.json  slurm.json
+docker.json  
 ```
 
 Guess what file we will be interacting with? Since we are (sort of) using Docker contianers, we are going to be using the `docker.json` file.
@@ -164,7 +156,7 @@ Note that if you've run this already and the run generated an indexed reference,
 to the configuration too (otherwise it is generated again):
 
 ```bash
-    "wgbs.indexed_reference": "/opt/data/TEST-YEAST/yeast.gem",
+    "wgbs.indexed_reference": "data/TEST-YEAST/yeast.gem",
 ```
 
 The files for the yeast input (e.g., yeast.fa) are in the same folder as `inputs.json`
@@ -220,7 +212,27 @@ that the present working directory (`$PWD`) on my local machine is `/opt` inside
 throw the entire command at you and we can then talk about it.
 
 ```bash
-$ singularity exec --bind /usr/bin/docker cromwell.simg java -jar -Dconfig.file=backends/backend.conf /app/cromwell.jar run runners/test.wdl -i data/TEST-YEAST/inputs.json -o workflow_opts/docker.json
+$ java -jar -Dconfig.file=backends/backend.conf -Dbackend.default=singularity cromwell-34.jar run runners/test.wdl -i data/TEST-YEAST/inputs.json -o workflow_opts/singularity.json
 ```
 
-**still working on this, it doesn't work**
+
+
+## Debugging
+
+Here are some common errors you might hit. At least I did :)
+
+### Permissions Errors with Singularity
+
+If you cat an error file and see a permission denied:
+
+```bash
+$ cat /home/vanessa/Documents/Dropbox/Code/labs/cherry/pipelines/wgbs-pipeline/cromwell-executions/wgbs/55de1d03-9a64-4412-a3cc-14d38dc365ab/call-flatten_/execution/stderr.submit 
+/.singularity.d/actions/exec: 9: exec: /home/vanessa/Documents/Dropbox/Code/labs/cherry/pipelines/wgbs-pipeline/cromwell-executions/wgbs/55de1d03-9a64-4412-a3cc-14d38dc365ab/call-flatten_/execution/script: Permission denied
+```
+It's likely that you were using Docker before, and so the permissions on the `cromwell-executions` directory is root owned, along with the `cromwell-workflow-logs`. You can remove these directories, and try again (or just change ownership to be your user, recursively.)
+
+```bash
+sudo chown $USER -R cromwell-executions
+# or (who needs old logs anyway...)
+sudo rm -rf cromwell-executions
+```
