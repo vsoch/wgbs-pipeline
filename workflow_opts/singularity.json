@@ -1,5 +1,5 @@
 {
     "default_runtime_attributes" : {
-        "singularity_container" : "shub://heathsc/gemBS"
+        "singularity_container" : "gemBS.simg"
     }
 }

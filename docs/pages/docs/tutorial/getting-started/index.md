@@ -91,7 +91,7 @@ wgbs-pipeline
 
  - the workflows are in the `runners` folder. They are files that end in `*.wdl`
  - repository provided data and input specifications, in subfolders corresponding to experiment identifiers, are under `data`
- - `Dockerfile` is a recipe that builds a container
+ - `Dockerfile` and `Singularity` are recipes that build containers
  - `backends` and `workflow_opts` and folders for different running configurations (e.g., SLURM vs. Google Cloud)
 
 Most of the above is self explanatory, but actually let's just ignore the chunk of files and tell you the specific files that you should care about:
@@ -104,22 +104,42 @@ Let's not worry about the rest for now. You can continue on by selecting the env
 
 ## Step 4: Choose Where to Run
 
-Since we are running a dummy test case with rather tiny data, we can start on your local machine. You should already
-have installed (and be comfortable) with using basic Docker.
+Since we are running a dummy test case with rather tiny data, we can start on your local machine.
 
 ### Singularity Container
 
-We are going to be interacting with Cromwell locally and run the [gemBS provided Singularity container]().
+We are going to be interacting with Cromwell locally (the cromwell-34.jar file that you downloaded previously)
+and interact with gemBS in a container. Let's build the Singularity container in advance, so it's found in the present working directory. It will build from the `Singularity` file.
+
+```bash
+sudo singularity build gemBS.simg Singularity
+```
 
 #### Customize Local Variables
 
 Remember the [workflow_opts](workflow_opts) folder you found locally?
 
 ```bash
-docker.json  
+docker.json  google_docker.json singularity.json
 ```
 
-Guess what file we will be interacting with? Since we are (sort of) using Docker contianers, we are going to be using the `docker.json` file.
+Guess what file we will be interacting with? Since we are using Singularity, we are going to be using the `singularity.json` file.
+
+
+```bash
+{
+    "default_runtime_attributes" : {
+        "singularity_container" : "gemBS.simg"
+    }
+}
+```
+
+Note that you can change the `workflow_opts/singularity.json` container file name, it's the variable called `singularity_container`.
+It could be a Singularity Hub uri (e.g., `shub://<username>/<reponame>` or another local image name. The container should 
+generally (for this repository) have a runscript/entrypoint of executing `/bin/bash -c "$@"` which means that we could take
+any argument given to it. You could also use a docker URI (e.g,, `docker://<username>/<reponame>`), and this will pull a Docker image into Singularity (so you might
+only need to maintain one).
+
 
 #### Data Inputs
 
@@ -138,15 +158,14 @@ data/TEST-YEAST/
 We can be stupid and quickly see the data that we need by looking at the `inputs.json` file provided:
 
 ```bash
-#TODO FIX ME
 {
     "wgbs.prepare.metadata_file": "data/TEST-YEAST/metadata.csv",
     "wgbs.chromosomes":["chrIII"],
     "wgbs.pyglob_nearness":1,
     "wgbs.organism":"Yeast",
-    "wgbs.reference": "/opt/data/TEST-YEAST/yeast.fa",
-    "wgbs.fastqs": [["/opt/data/fastq/flowcell_1_1_1.fastq.gz",
-                     "/opt/data/fastq/flowcell_1_1_2.fastq.gz"]],
+    "wgbs.reference": "data/TEST-YEAST/yeast.fa",
+    "wgbs.fastqs": [["data/fastq/flowcell_1_1_1.fastq.gz",
+                     "data/fastq/flowcell_1_1_2.fastq.gz"]],
     "wgbs.sample_names": ["sample1", "sample2"],
     "wgbs.sample_barcodes": ["YEASTY1", "YEASTY2"]
 }
@@ -159,8 +178,9 @@ to the configuration too (otherwise it is generated again):
     "wgbs.indexed_reference": "data/TEST-YEAST/yeast.gem",
 ```
 
-The files for the yeast input (e.g., yeast.fa) are in the same folder as `inputs.json`
-so there isn't any additional relative path beyond the file name. We won't go into the structure of this file
+The files for the yeast input (e.g., yeast.fa) are in the same folder as `inputs.json`. Since we are running
+the container with the present working directory (with cromwell) at the repository base, this is the relative path
+that we assume. We won't go into the structure of this file
 in detail, but notice that it has fields for a reference fasta, chromosomes, and things like the organism.
 If you are familiar with python, you might guess that `wgbs` is referencing the pipeline name, and will
 help to put the loaded data into a namespace for it.
@@ -168,54 +188,19 @@ help to put the loaded data into a namespace for it.
 #### Run the Pipeline!
 
 We haven't done anything, and that's because we didn't need to set up a cloud, and we didn't need
-to download data. Easy peezy! Let's run Cromwell! Before we interact with Docker, let me show you
-what running the pipeline (inside of Docker, or without it on your host) would look like:
-
-```bash
-$ java -jar -Dconfig.file=backends/backend.conf cromwell-30.2.jar run [WDL] -i inputs.json -o workflow_opts/docker.json
-```
+to download data. To summarize what we have covered thus far:
 
  - **backends/backend.conf** is provided in the respository.
- - **cromwell-30.2.jar** is provided in the container at `/app/cromwell.jar`
+ - **cromwell-34.jar** we downloaded from Github as `cromwell-34.jar`
  - **inputs.json** is an input that you select from a data subfolder under `data`
- - **workflow_opts/docker.json** are workflow arguments for... Docker!
-
-Okay, so we need to translate this to Docker! As a reminder, here is the entry point to Cromwell. Try running this command to see Cromwell say a pigggy hello:
-
-```bash
-singularity run cromwell.simg
-
-# is equivalent to
-
-./cromwell.simg
-```
-
-Our next task, logically, is to translate the above Cromwell command into something directed
-at the Singularity container. There is an additional challenge of isolation. A Singuarity container is a (mostly) isolated environment, so we need to make sure that the container can see everything on the host. Thanksfully, Singularity will automatically bind the present work directory (and all its subfolders) so we
-can see our data files without additional work. This allows us to specify paths that are relative to
-the present working directory. 
+ - **workflow_opts/singularity.json** are workflow arguments for singularity
 
 
-
-means that if you are to run something from your local machine, it can't actually *see* the
-files that you have! So in order to make any references to files in the container, we have to map a volume.
-This means that the working directory of your {{ site.github.repository_name }} folder will be mapped
-(somewhere) in the container. A good place for this is `/opt`, which tends to be used for things like
-are like modular apps:
-
-```
-{{ site.github.repository_name }} --> /opt
-```
-
-The argument to running Docker will thus include `-v $PWD/:/opt`, and this means "map a volume (`-v`) so
-that the present working directory (`$PWD`) on my local machine is `/opt` inside the container. Let me 
-throw the entire command at you and we can then talk about it.
+Easy peezy! Let's run Cromwell!  Tell it to use singularity!
 
 ```bash
 $ java -jar -Dconfig.file=backends/backend.conf -Dbackend.default=singularity cromwell-34.jar run runners/test.wdl -i data/TEST-YEAST/inputs.json -o workflow_opts/singularity.json
 ```
-
-
 
 ## Debugging
 

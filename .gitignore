@@ -8,6 +8,9 @@ metadata.json
 
 help/ENC*
 
+# Singularity
+gemBS.simg
+
 # Docs
 docs/_site
 
