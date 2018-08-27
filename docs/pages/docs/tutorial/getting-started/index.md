@@ -103,7 +103,22 @@ Most of the above is self explanatory, but actually let's just ignore the chunk 
  
 Let's not worry about the rest for now. You can continue on by selecting the environment where you want to run the pipeline.
 
-## Step 4: Choose Where to Run
+## Step 4: Run Test Case
+
+In the data folder there is a "hello" subdirectory that provides inputs from one of the 
+[test cases](https://github.com/broadinstitute/cromwell/tree/develop/centaur/src/main/resources/standardTestCases) 
+provided by the broadinstitute. that should work for any basic pipeline.
+
+```
+$ java -jar -Dconfig.file=backends/backend.conf  cromwell-34.jar run runners/hello.wdl
+```
+
+This is pretty stupid - it just wraps a singularity command and runs it using the Local (default) back end. The "singularity" backend doesn't
+really make sense, because singularity is more like an executable than anything else. I've left it as the backend "singularity" using an instance,
+if/when this is further developed.
+
+
+## Step 5: Choose Where to Run
 
 Since we are running a dummy test case with rather tiny data, we can start on your local machine.
 
@@ -138,8 +153,7 @@ Guess what file we will be interacting with? Since we are using Singularity, we 
 Note that you can change the `workflow_opts/singularity.json` container file name, it's the variable called `singularity_container`.
 It could be a Singularity Hub uri (e.g., `shub://<username>/<reponame>` or another local image name. The container should 
 generally (for this repository) have a runscript/entrypoint of executing `/bin/bash -c "$@"` which means that we could take
-any argument given to it. You could also use a docker URI (e.g,, `docker://<username>/<reponame>`), and this will pull a Docker image into Singularity (so you might
-only need to maintain one).
+any argument given to it. You could also use a docker URI (e.g,, `docker://<username>/<reponame>`), and this will pull a Docker image into Singularity (so you might only need to maintain one).
 
 
 #### Data Inputs
