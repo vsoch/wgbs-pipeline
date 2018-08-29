@@ -1,0 +1,11 @@
+{
+    "wgbs.prepare.metadata_file": "data/TEST-YEAST/metadata.csv",
+    "wgbs.chromosomes":["chrIII"],
+    "wgbs.pyglob_nearness":1,
+    "wgbs.organism":"Yeast",
+    "wgbs.reference": "data/TEST-YEAST/yeast.fa",
+    "wgbs.fastqs": [["data/fastq/flowcell_1_1_1.fastq.gz",
+                     "data/fastq/flowcell_1_1_2.fastq.gz"]],
+    "wgbs.sample_names": ["sample1", "sample2"],
+    "wgbs.sample_barcodes": ["YEASTY1", "YEASTY2"]
+}

@@ -8,6 +8,12 @@ metadata.json
 
 help/ENC*
 
+# Singularity
+gemBS.simg
+
+# Docs
+docs/_site
+
 # cromwell temp dirs
 cromwell-executions/
 cromwell-workflow-logs/

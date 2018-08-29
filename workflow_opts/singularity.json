@@ -1,0 +1,6 @@
+{
+    "default_runtime_attributes" : {
+        "singularity_container" : "gemBS.simg",
+        "singularity_instance_name": "gemBS"
+    }
+}
